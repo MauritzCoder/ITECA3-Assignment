@@ -7,9 +7,11 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
   if ($email && $pass){
     if ($u = user_find_by_email($email)){
       if (password_verify($pass, $u['password_hash'])){
-        $_SESSION['user']=['email'=>$u['email'],'name'=>$u['name'],'role'=>$u['role']];
+        $_SESSION['user']=['id'=> $u['id'],'email'=>$u['email'],'name'=>$u['name'],'role'=>$u['role']];
         flash('ok','Logged in.');
-        header('Location: '.url('index.php')); exit;
+        header('Location: '.url('index.php'));  
+
+        exit;
       }
     }
     $msg='Invalid credentials';

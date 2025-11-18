@@ -1,4 +1,7 @@
-<?php require __DIR__.'/config.php'; ?>
+<?php require __DIR__.'/config.php'; 
+$ecopoints_balance = auth_user() ? ecopoints_balance(auth_user()['id']) : null;
+
+?>
 <!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= e($title ?? 'DragonStone') ?></title>
@@ -61,10 +64,22 @@ header nav a:hover::after,
     background-color: #f0f0f0;
   }
 
-
+/* this is styling the eco points display in the header */
+.badge{
+  display:inline-block;
+  padding:0.2rem .5rem;
+  border-radius:999px;
+  font-size:.8rem;
+  background:#111;
+  color:#fff;
+  margin-left:.5rem;
+}
 </style>
+
+
 </head><body>
 <header  class="site-header" style="background-color: #7cca74ff; color: white;">
+  
   <div class="container row">
     <div>
       <a class="btn ghost" href="<?= url('index.php')?>"><b>DragonStone</b></a>
@@ -75,7 +90,7 @@ header nav a:hover::after,
 		<?php if (auth_user()): ?><a href="<?= url('orders.php') ?>">My Orders</a><?php endif; ?>
         <!-- <a href="<?= url('docs.php')?>">Docs</a> -->
          <a href="<?= url('community.php')?>">Community</a>
-
+      <?php if (auth_user()): ?><a href="<?= url('ecopoints.php') ?>">My EcoPoints</a><?php endif; ?>
          <!-- display ecopoints in the header -->
     <?php if(!empty($ecopoints_balance)): ?>
   <span class="badge">EcoPoints: <?= (int)$ecopoints_balance ?></span>

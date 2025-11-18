@@ -10,7 +10,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
       $msg = 'Email already registered';
     } else {
       if (user_create($name,$email,$pass)){
-        $_SESSION['user']=['email'=>$email,'name'=>$name,'role'=>'user'];
+        $_SESSION['user']=['id'=> $u['id'],'email'=>$email,'name'=>$name,'role'=>'user'];
         flash('ok','Registered.');
         header('Location: '.url('index.php')); exit;
       } else {

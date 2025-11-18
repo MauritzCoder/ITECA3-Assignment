@@ -1,6 +1,8 @@
 <?php $title='Cart'; require __DIR__.'/header.php';
 if(isset($_POST['remove'])){ cart_remove((int)$_POST['remove']); flash('ok','Item removed'); header('Location: '.url('cart.php')); exit; }
 $items = cart_items(); $total = cart_total();
+ $order_carbon_grams = cart_total_carbon_grams($items);
+  $order_carbon_kg    = $order_carbon_grams / 1000;
 ?>
 <h1>Your Cart</h1>
 <?php if(!$items): ?><p>Cart is empty.</p>

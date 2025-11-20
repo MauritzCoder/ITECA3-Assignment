@@ -1,4 +1,5 @@
-<?php $title='Docs'; require __DIR__.'/header.php'; ?>
+<?php $title = 'Docs';
+require __DIR__ . '/header.php'; ?>
 <h1>MiniStore Docs</h1>
 
 <h2>Purpose</h2>
@@ -44,4 +45,4 @@
   <li>Modify <code>checkout.php</code> validation to include phone and postal code.</li>
   <li>Turn on MySQL and query products (see <code>products_all()</code> in <code>functions.php</code>).</li>
 </ul>
-<?php require __DIR__.'/footer.php'; ?>
+<?php require __DIR__ . '/footer.php'; ?>

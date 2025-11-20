@@ -3,7 +3,7 @@ $title = 'Community';
 require __DIR__.'/header.php';
 require_once __DIR__.'/functions.php';
 
-$user = $_SESSION['user'] ?? null; // adjust if you store user differently
+$user = $_SESSION['user'] ?? null; // adjust if  store user differently
 
 // handle create post (POST)
 if($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['action']) && $_POST['action']==='create'){

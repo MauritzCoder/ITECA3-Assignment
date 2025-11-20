@@ -20,7 +20,7 @@ if ($user_id === null && is_array($userArr)) {
     if (isset($userArr[$k])) { $user_id = (int)$userArr[$k]; break; }
   }
 }
-$user = $userArr ?: null; // used by your template checks (if($user))
+$user = $userArr ?: null; // used by template checks (if($user))
 
 // 2) Identify the post (support ?post=slug OR ?id=number)
 $opened_with_post = array_key_exists('post', $_GET);
@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $post_id = (int)($_POST['post_id'] ?? $post_pk);
 
   if (!$user_id) {
-    // If you prefer redirect instead of exit:
+
     // header('Location: login.php?next='.urlencode($_SERVER['REQUEST_URI'])); exit;
     http_response_code(401);
     exit('Please sign in to comment or vote.');
@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       forum_comment_create($post_id, $user_id, $body);
     }
   }
-  // PRG: redirect back using the same identifier you used to open
+  // PRG: redirect back using the same identifier  used to open
   $back = $opened_with_post
     ? 'community_post.php?post='.rawurlencode($key)
     : 'community_post.php?id='.$post_pk;

@@ -1,6 +1,8 @@
 <?php require __DIR__.'/config.php'; 
-$ecopoints_balance = auth_user() ? ecopoints_balance(auth_user()['id']) : null;
 
+// Compute current user + EcoPoints balance once for the header
+$u = auth_user();
+$ecopoints_balance = $u ? ecopoints_balance($u['id']) : null;
 ?>
 <!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -64,10 +66,10 @@ header nav a:hover::after,
     background-color: #f0f0f0;
   }
 
-/* this is styling the eco points display in the header */
+  /* styling the eco points badge */
 .badge{
   display:inline-block;
-  padding:0.2rem .5rem;
+  padding:0.1rem .5rem;
   border-radius:999px;
   font-size:.8rem;
   background:#111;
@@ -78,6 +80,16 @@ header nav a:hover::after,
 
 
 </head><body>
+
+    <!-- Google tag (gtag.js) -->
+<!-- <script async src="https://www.googletagmanager.com/gtag/js?id=G-MCF1TFSXFN"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-MCF1TFSXFN');
+</script> -->
 <header  class="site-header" style="background-color: #7cca74ff; color: white;">
   
   <div class="container row">
@@ -88,9 +100,10 @@ header nav a:hover::after,
         <a href="<?= url('cart.php')?>">Cart <span class="pill"><?= array_sum(cart_get() ?: []) ?></span></a>
         <?php if(is_admin()): ?><a href="<?= url('admin.php')?>">Admin</a><?php endif; ?>
 		<?php if (auth_user()): ?><a href="<?= url('orders.php') ?>">My Orders</a><?php endif; ?>
+      <?php if ($u): ?><a href="<?= url('ecopoints.php') ?>">My EcoPoints</a><?php endif; ?>
         <!-- <a href="<?= url('docs.php')?>">Docs</a> -->
          <a href="<?= url('community.php')?>">Community</a>
-      <?php if (auth_user()): ?><a href="<?= url('ecopoints.php') ?>">My EcoPoints</a><?php endif; ?>
+
          <!-- display ecopoints in the header -->
     <?php if(!empty($ecopoints_balance)): ?>
   <span class="badge">EcoPoints: <?= (int)$ecopoints_balance ?></span>

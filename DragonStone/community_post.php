@@ -7,7 +7,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
   session_start();
 }
 
-require __DIR__.'/header.php'; // header also starts session
+require __DIR__.'/header.php'; // ok if header also starts session
 
 // 1) Robust current user extraction (flat OR nested)
 $user_id = null;
@@ -20,14 +20,14 @@ if ($user_id === null && is_array($userArr)) {
     if (isset($userArr[$k])) { $user_id = (int)$userArr[$k]; break; }
   }
 }
-$user = $userArr ?: null; 
+$user = $userArr ?: null; // used by your template checks (if($user))
 
 // 2) Identify the post (support ?post=slug OR ?id=number)
 $opened_with_post = array_key_exists('post', $_GET);
 $key = $_GET['post'] ?? ($_GET['id'] ?? '');
 if ($key === '') { echo "<p>Post not found.</p>"; require __DIR__.'/footer.php'; exit; }
 
-// let resolver decide slug vs id
+// DO NOT cast $key; let your resolver decide slug vs id
 $post = forum_post_get($key);
 if (!$post) { echo "<p>Post not found.</p>"; require __DIR__.'/footer.php'; exit; }
 
@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $post_id = (int)($_POST['post_id'] ?? $post_pk);
 
   if (!$user_id) {
-    //redirect instead of exit:
+    // If you prefer redirect instead of exit:
     // header('Location: login.php?next='.urlencode($_SERVER['REQUEST_URI'])); exit;
     http_response_code(401);
     exit('Please sign in to comment or vote.');
@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       forum_comment_create($post_id, $user_id, $body);
     }
   }
-  // PRG: redirect back using the same identifier used to open
+  // PRG: redirect back using the same identifier you used to open
   $back = $opened_with_post
     ? 'community_post.php?post='.rawurlencode($key)
     : 'community_post.php?id='.$post_pk;
@@ -93,29 +93,19 @@ $comments = forum_comments_for($post_pk);
 <section class="card pad" style="margin-top:1rem">
   <h3>Comments (<?= count($comments) ?>)</h3>
 
-<?php if ($user): ?>
-  <section style="margin-top:2rem;">
-    <h3>Add a comment</h3>
-    <p class="ep-hint">
-      Join the discussion and earn
-      <strong><?= ECOPOINTS_COMMENT ?> EcoPoints</strong> for each comment you post.
-    </p>
-
-    <form method="post">
-      <div class="field">
-        <label for="comment-body">Your comment</label>
-        <textarea name="body" id="comment-body" rows="4" required></textarea>
+  <?php if($user): ?>
+    <form method="post" style="margin:.6rem 0">
+      <input type="hidden" name="action" value="comment">
+      <input type="hidden" name="post_id" value="<?= $post_pk ?>">
+      <textarea name="body" rows="4" placeholder="Add your comment…" required style="width:100%;"></textarea>
+      <div class="row" style="justify-content:space-between;margin-top:.4rem">
+        <small class="muted">Earn +<?= ECOPOINTS_COMMENT ?> EcoPoints</small>
+        <button class="btn">Post Comment</button>
       </div>
-
-      <button type="submit" name="action" value="comment" class="btn">
-        Post comment
-        <span class="ep-pill">+<?= ECOPOINTS_COMMENT ?> pts</span>
-      </button>
     </form>
-  </section>
-<?php else: ?>
-  <p>Please <a href="<?= url('login.php') ?>">log in</a> to comment and earn EcoPoints.</p>
-<?php endif; ?>
+  <?php else: ?>
+    <div class="alert">Please <a href="login.php">log in</a> to comment & earn EcoPoints.</div>
+  <?php endif; ?>
 
   <?php foreach($comments as $c): ?>
     <div class="card" style="margin:.5rem 0">

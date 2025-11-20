@@ -13,7 +13,7 @@ function products_all()
 
   // 1) Prefer DB when enabled and connected
   if ($USE_DB && $mysqli) {
-    $res = mysqli_query($mysqli, "SELECT id, category_id, name, price, img, description, stock_qty , carbon_per_unit
+    $res = mysqli_query($mysqli, "SELECT id, category_id, name, price, img, description, stock_qty 
      FROM products
      WHERE status = 'active'");
     if ($res) {
@@ -34,8 +34,7 @@ function products_all()
 }
 
 // ---------- Category access ----------
-function categories_all()
-{
+function categories_all() {
   global $USE_DB, $mysqli;
 
   if ($USE_DB && $mysqli) {
@@ -49,13 +48,13 @@ function categories_all()
 
   // Fallback (if DB off) – adjust names if needed
   return [
-    ['id' => 1, 'name' => 'Cleaning & Household Supplies', 'slug' => 'cleaning-household'],
-    ['id' => 2, 'name' => 'Kitchen & Dining', 'slug' => 'kitchen-dining'],
-    ['id' => 3, 'name' => 'Home Décor & Living', 'slug' => 'home-decor-living'],
-    ['id' => 4, 'name' => 'Bathroom & Personal Care', 'slug' => 'bathroom-personal-care'],
-    ['id' => 5, 'name' => 'Lifestyle & Wellness', 'slug' => 'lifestyle-wellness'],
-    ['id' => 6, 'name' => 'Kids & Pets', 'slug' => 'kids-pets'],
-    ['id' => 7, 'name' => 'Outdoor & Garden', 'slug' => 'outdoor-garden'],
+    ['id'=>1,'name'=>'Cleaning & Household Supplies','slug'=>'cleaning-household'],
+    ['id'=>2,'name'=>'Kitchen & Dining','slug'=>'kitchen-dining'],
+    ['id'=>3,'name'=>'Home Décor & Living','slug'=>'home-decor-living'],
+    ['id'=>4,'name'=>'Bathroom & Personal Care','slug'=>'bathroom-personal-care'],
+    ['id'=>5,'name'=>'Lifestyle & Wellness','slug'=>'lifestyle-wellness'],
+    ['id'=>6,'name'=>'Kids & Pets','slug'=>'kids-pets'],
+    ['id'=>7,'name'=>'Outdoor & Garden','slug'=>'outdoor-garden'],
   ];
 }
 
@@ -167,6 +166,44 @@ function flash($key, $val = null)
   $_SESSION['flash'][$key] = $val;
 }
 
+/* ---------- User admin helpers ---------- */
+
+function users_all()
+{
+  global $mysqli, $USE_DB;
+  if (!$USE_DB || !$mysqli) return [];
+
+  $sql = "SELECT id, name, email, role, created_at
+          FROM users
+          ORDER BY created_at DESC";
+  $res = mysqli_query($mysqli, $sql);
+  return $res ? mysqli_fetch_all($res, MYSQLI_ASSOC) : [];
+}
+
+//changin users roll form admin side
+function user_update_role(int $user_id, string $role): bool
+{
+  global $mysqli, $USE_DB;
+  if (!$USE_DB || !$mysqli) return false;
+
+  // Only allow known roles
+  $allowed = ['customer', 'staff', 'manager', 'admin'];
+  if (!in_array($role, $allowed, true)) {
+    return false;
+  }
+
+  $sql = "UPDATE users SET role=? WHERE id=?";
+  $st  = mysqli_prepare($mysqli, $sql);
+  mysqli_stmt_bind_param($st, "si", $role, $user_id);
+  $ok = mysqli_stmt_execute($st);
+  return (bool)$ok;
+}
+
+// Optional helper for select options
+function user_roles_all(): array
+{
+  return ['customer', 'staff', 'manager', 'admin'];
+}
 
 /** USERS **/
 function user_find_by_email($email)
@@ -191,12 +228,12 @@ function user_create($name, $email, $password)
 }
 
 /** PRODUCTS ADD (Admin create/delete minimal) **/
-function product_create($name, $price, $img, $desc, $stock_qty, $category_id)
+function product_create($name, $price, $img, $desc, $stock_qty,$category_id)
 {
   global $mysqli, $USE_DB;
   if (!$USE_DB || !$mysqli) return false;
-  $stmt = mysqli_prepare($mysqli, "INSERT INTO products(category_id,name,price,stock_qty,img,description) VALUES(?,?,?,?,?,?)");
-  // i = int (category), s = string (name), d = decimal (price),
+  $stmt = mysqli_prepare($mysqli, "INSERT INTO products(category_id,name,price,stock_qty,description,img) VALUES(?,?,?,?,?,?)");
+ // i = int (category), s = string (name), d = decimal (price),
   // i = int (stock), s = string (img), s = string (desc)
   mysqli_stmt_bind_param($stmt, "isdiss",  $category_id, $name, $price, $stock_qty, $img, $desc);
   return mysqli_stmt_execute($stmt);
@@ -234,6 +271,9 @@ function order_create($user_id, $name, $email, $address, $items)
     } else {
       mysqli_stmt_bind_param($stmt, "isssd", $user_id, $name, $email, $address, $total);
     }
+
+  
+
     mysqli_stmt_execute($stmt);
     $order_id = mysqli_insert_id($mysqli);
 
@@ -248,7 +288,7 @@ function order_create($user_id, $name, $email, $address, $items)
       mysqli_stmt_execute($stmt2);
     }
 
-     // Award EcoPoints for purchase (only for logged-in customers)
+       // Award EcoPoints for purchase (only for logged-in customers)
     if ($user_id !== null) {
       // Example rule: 1 point per R1 spent
       $points = (int) floor($total * ECOPOINTS_PURCHASE);
@@ -263,10 +303,7 @@ function order_create($user_id, $name, $email, $address, $items)
     mysqli_rollback($mysqli);
     return false;
   }
-
-
 }
-
 
 
 function orders_by_user($user_id)
@@ -313,37 +350,6 @@ function order_with_items_for_user($order_id, $user_id)
   return $order;
 }
 
-// ----------------------carbon footprint---------------
-
-function cart_total_carbon_grams(array $items): float
-{
-  // $items = array of ['id','name','price','qty']
-  global $mysqli, $USE_DB;
-  if (!$USE_DB || !$mysqli) return 0.0;
-
-  $total_grams = 0.0;
-
-  foreach ($items as $it) {
-    $pid = (int)$it['id'];
-    $q   = (int)$it['qty'];
-    if ($pid <= 0 || $q <= 0) continue;
-
-    $sql = "SELECT carbon_per_unit FROM products WHERE id=?";
-    $st  = mysqli_prepare($mysqli, $sql);
-    mysqli_stmt_bind_param($st, "i", $pid);
-    mysqli_stmt_execute($st);
-    $res = mysqli_stmt_get_result($st);
-    if ($res && ($row = mysqli_fetch_assoc($res))) {
-      $c = (float)($row['carbon_per_unit'] ?? 0.0);
-      if ($c > 0) {
-        $total_grams += $c * $q;
-      }
-    }
-  }
-
-  return $total_grams;
-}
-
 // ---------------------------------------------------
 //community blog
 //----------------------------------------------------
@@ -351,8 +357,7 @@ function cart_total_carbon_grams(array $items): float
 const ECOPOINTS_POST     = 10;  // earn for a published post
 const ECOPOINTS_COMMENT  = 3;   // earn for a comment
 const ECOPOINTS_UPVOTE   = 1;   // optional: when your post is upvoted (not implemented here)
-const ECOPOINTS_PURCHASE = 1;   // earn 1 EcoPoint per R1 spent
-
+const ECOPOINTS_PURCHASE = 1;   // earn 1 EcoPoint per R1 spent (adjust if needed)
 
 /* ---------- EcoPoints ---------- */
 function ecopoints_add($user_id, $delta, $reason, $ref_type = null, $ref_id = null)
@@ -378,7 +383,7 @@ function ecopoints_balance($user_id)
   return (int)$bal;
 }
 
-//this is for the eco point page where user can see there history of there eco points
+//this will be used to show how the user have eraned theire eco points
 function ecopoints_history($user_id, $limit = 50)
 {
   global $mysqli, $USE_DB;
@@ -397,6 +402,7 @@ function ecopoints_history($user_id, $limit = 50)
   $res = mysqli_stmt_get_result($st);
   return $res ? mysqli_fetch_all($res, MYSQLI_ASSOC) : [];
 }
+
 /* ---------- Slug helper ---------- */
 function slugify($s)
 {
@@ -509,43 +515,6 @@ function forum_upvote($post_id, $user_id)
   return true;
 }
 
-/* ---------- User admin helpers ---------- */
-
-function users_all()
-{
-  global $mysqli, $USE_DB;
-  if (!$USE_DB || !$mysqli) return [];
-
-  $sql = "SELECT id, name, email, role, created_at
-          FROM users
-          ORDER BY created_at DESC";
-  $res = mysqli_query($mysqli, $sql);
-  return $res ? mysqli_fetch_all($res, MYSQLI_ASSOC) : [];
-}
-
-function user_update_role(int $user_id, string $role): bool
-{
-  global $mysqli, $USE_DB;
-  if (!$USE_DB || !$mysqli) return false;
-
-  // roles in DB
-  $allowed = ['customer', 'staff', 'manager', 'admin'];
-  if (!in_array($role, $allowed, true)) {
-    return false;
-  }
-
-  $sql = "UPDATE users SET role=? WHERE id=?";
-  $st  = mysqli_prepare($mysqli, $sql);
-  mysqli_stmt_bind_param($st, "si", $role, $user_id);
-  $ok = mysqli_stmt_execute($st);
-  return (bool)$ok;
-}
-
-function user_roles_all(): array
-{
-  return ['customer', 'staff', 'manager', 'admin'];
-}
-
 /* ---------- Admin Reports ---------- */
 
 function report_daily_sales(int $limit_days = 30): array
@@ -600,4 +569,117 @@ function report_low_stock(int $limit_rows = 20): array
   mysqli_stmt_execute($st);
   $res = mysqli_stmt_get_result($st);
   return $res ? mysqli_fetch_all($res, MYSQLI_ASSOC) : [];
+}
+
+//---------------------PRODUCT update____________
+// Get a single product by ID
+function product_get(int $id): ?array
+{
+    global $USE_DB, $mysqli;
+    $json = __DIR__ . '/products.json';
+
+    if ($USE_DB && $mysqli) {
+        $sql = "SELECT id, category_id, name, price, img, description, stock_qty
+                FROM products
+                WHERE id = ?";
+        $stmt = mysqli_prepare($mysqli, $sql);
+        if (!$stmt) {
+            return null;
+        }
+        mysqli_stmt_bind_param($stmt, 'i', $id);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = mysqli_fetch_assoc($res) ?: null;
+        mysqli_stmt_close($stmt);
+        return $row ?: null;
+    }
+
+    // Fallback: JSON file if DB not used
+    if (!is_file($json)) {
+        return null;
+    }
+
+    $items = json_decode(file_get_contents($json), true) ?: [];
+    foreach ($items as $p) {
+        if ((int)$p['id'] === $id) {
+            return $p;
+        }
+    }
+    return null;
+}
+
+// Update a product (no carbon_grams for now)
+function product_update(
+    int $id,
+    string $name,
+    float $price,
+    string $img,
+    string $desc,
+    int $stock_qty,
+    int $category_id
+): bool {
+    global $USE_DB, $mysqli;
+    $json = __DIR__ . '/products.json';
+
+    if ($USE_DB && $mysqli) {
+        $sql = "
+            UPDATE products
+               SET name = ?,
+                   price = ?,
+                   img = ?,
+                   description = ?,
+                   stock_qty = ?,
+                   category_id = ?
+             WHERE id = ?
+        ";
+
+        $stmt = mysqli_prepare($mysqli, $sql);
+        if (!$stmt) {
+            return false;
+        }
+
+        // s = string, d = double, i = int
+        mysqli_stmt_bind_param(
+            $stmt,
+            'sdssiii',
+            $name,
+            $price,
+            $img,
+            $desc,
+            $stock_qty,
+            $category_id,
+            $id
+        );
+
+        $ok = mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+        return $ok;
+    }
+
+    // Fallback: JSON update
+    if (!is_file($json)) {
+        return false;
+    }
+
+    $items = json_decode(file_get_contents($json), true) ?: [];
+    $found = false;
+
+    foreach ($items as &$p) {
+        if ((int)$p['id'] === $id) {
+            $p['name']        = $name;
+            $p['price']       = $price;
+            $p['img']         = $img;
+            $p['description'] = $desc;
+            $p['stock_qty']   = $stock_qty;
+            $p['category_id'] = $category_id;
+            $found = true;
+            break;
+        }
+    }
+
+    if (!$found) {
+        return false;
+    }
+
+    return (bool)file_put_contents($json, json_encode($items, JSON_PRETTY_PRINT));
 }

@@ -1,13 +1,11 @@
 <?php $title = 'Admin';
 require __DIR__ . '/header.php';
 
-
-
-// allow admin & manager into admin area
-if (!is_admin() && !is_manager()) {
-    flash('err', 'Access denied. Admin or Manager access required.');
-    header('Location: '.url('index.php'));
-    exit;
+//access validation
+if (!is_admin()) {
+  echo "<p class='error'>Admins only.</p>";
+  require __DIR__ . '/footer.php';
+  exit;
 }
 
 $current = auth_user(); // current logged-in admin/manager
@@ -51,13 +49,14 @@ if (
   exit;
 }
 
+
 $json = __DIR__ . '/products.json';
 $items = products_all();
 // var_dump($_POST['category_id']);//testing if rigth value is send form the selecet categorys
 // exit;
 $items = products_all();
 $cats = categories_all();   //get all categories for the dropdown
-$users = users_all(); //getting all users
+$users = users_all(); //getting all the users
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $act = $_POST['act'] ?? '';
@@ -67,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $img = trim($_POST['img'] ?? '');
     $stock_qty = (float)($_POST['stock_qty'] ?? 0);
     $category_id = (int)($_POST['category_id'] ?? 0);
-    $desc = trim($_POST['description'] ?? '');
+    $desc = trim($_POST['desc'] ?? '');
 
     if ($name !== '' && $price > 0) { //validate if admin have enterd a price
       if (product_create($name, $price, $img, $desc, $stock_qty, $category_id)) {
@@ -100,224 +99,230 @@ $items = products_all();
 $daily_sales  = report_daily_sales(14);   // last 14 days
 $top_products = report_top_products(5);   // top 5
 $low_stock    = report_low_stock(10);     // 10 lowest stock items
+
+
 ?>
 
 <style>
-/* --- Admin: User Management Styles --- */
+  /* --- Admin: User Management Styles --- */
 
-.admin-wrapper {
-  max-width: 1100px;
-  margin: 2rem auto;
-  padding: 0 1rem 3rem;
-}
-
-.admin-section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-}
-
-.admin-section-header h2 {
-  margin: 0;
-}
-
-.admin-section-sub {
-  margin: 0;
-  font-size: .9rem;
-  color: #666;
-}
-
-.user-table-card {
-  background: #fff;
-  border-radius: 0.8rem;
-  box-shadow: 0 6px 20px rgba(0,0,0,.06);
-  padding: 1.3rem 1.4rem;
-}
-
-.user-table-card h3 {
-  margin-top: 0;
-  margin-bottom: .85rem;
-  font-size: 1.05rem;
-}
-
-/* Table */
-.user-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: .9rem;
-}
-
-.user-table thead tr {
-  border-bottom: 2px solid #eee;
-}
-
-.user-table th,
-.user-table td {
-  padding: .5rem .35rem;
-}
-
-.user-table th {
-  text-align: left;
-  font-size: .75rem;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  color: #777;
-}
-
-.user-table tbody tr:nth-child(even) {
-  background: #fafafa;
-}
-
-.user-table tbody tr:hover {
-  background: #f3f3f3;
-}
-
-/* Role badges */
-.role-badge {
-  display: inline-block;
-  padding: .15rem .55rem;
-  border-radius: 999px;
-  font-size: .75rem;
-  text-transform: capitalize;
-}
-
-.role-badge.customer {
-  background: #e6f0ff;
-  color: #1d4ed8;
-}
-
-.role-badge.staff {
-  background: #fff7e6;
-  color: #b45309;
-}
-
-.role-badge.manager {
-  background: #e6f7f0;
-  color: #047857;
-}
-
-.role-badge.admin {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
-/* Tiny stats row */
-.user-meta {
-  font-size: .75rem;
-  color: #777;
-}
-
-/* Inline form */
-.user-action-form {
-  display: inline-flex;
-  align-items: center;
-  gap: .35rem;
-}
-
-.user-action-form select {
-  font-size: .8rem;
-  padding: .15rem .35rem;
-}
-
-.user-action-form .btn {
-  padding: .2rem .7rem;
-  font-size: .8rem;
-}
-
-.badge-count {
-  display: inline-block;
-  font-size: .75rem;
-  padding: .1rem .45rem;
-  border-radius: 999px;
-  background: #f3f4f6;
-  color: #4b5563;
-}
-
-/* --- Admin: Reports --- */
-.admin-reports {
-  max-width: 1000px;
-  margin: 2rem auto;
-  padding: 0 1rem 2.5rem;
-}
-
-.admin-reports h1 {
-  margin-top: 0;
-  margin-bottom: 1rem;
-}
-
-.report-grid {
-  display: grid;
-  gap: 1.5rem;
-}
-
-@media (min-width: 900px) {
-  .report-grid {
-    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1.3fr);
+  .admin-wrapper {
+    max-width: 1100px;
+    margin: 2rem auto;
+    padding: 0 1rem 3rem;
   }
-}
 
-.report-card {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 6px 18px rgba(0,0,0,.06);
-  padding: 1rem 1.2rem;
-}
+  .admin-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
 
-.report-card h2 {
-  margin-top: 0;
-  margin-bottom: .7rem;
-  font-size: 1.05rem;
-}
+  .admin-section-header h2 {
+    margin: 0;
+  }
 
-/* Tables */
-.report-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: .9rem;
-}
+  .admin-section-sub {
+    margin: 0;
+    font-size: .9rem;
+    color: #666;
+  }
 
-.report-table thead tr {
-  border-bottom: 2px solid #eee;
-}
+  .user-table-card {
+    background: #fff;
+    border-radius: 0.8rem;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .06);
+    padding: 1.3rem 1.4rem;
+  }
 
-.report-table th,
-.report-table td {
-  padding: .45rem .3rem;
-}
+  .user-table-card h3 {
+    margin-top: 0;
+    margin-bottom: .85rem;
+    font-size: 1.05rem;
+  }
 
-.report-table th {
-  text-align: left;
-  font-size: .75rem;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  color: #777;
-}
+  /* Table */
+  .user-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .9rem;
+  }
 
-.report-table tbody tr:nth-child(even) {
-  background: #fafafa;
-}
+  .user-table thead tr {
+    border-bottom: 2px solid #eee;
+  }
 
-.report-table tbody tr:hover {
-  background: #f3f3f3;
-}
+  .user-table th,
+  .user-table td {
+    padding: .5rem .35rem;
+  }
 
-/* Number formatting */
-.text-right { text-align: right; }
-.badge-soft {
-  display:inline-block;
-  padding:.1rem .45rem;
-  border-radius:999px;
-  font-size:.75rem;
-  background:#f3f4f6;
-  color:#4b5563;
-}
-.badge-soft-danger {
-  background:#fee2e2;
-  color:#b91c1c;
-}
+  .user-table th {
+    text-align: left;
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #777;
+  }
+
+  .user-table tbody tr:nth-child(even) {
+    background: #fafafa;
+  }
+
+  .user-table tbody tr:hover {
+    background: #f3f3f3;
+  }
+
+  /* Role badges */
+  .role-badge {
+    display: inline-block;
+    padding: .15rem .55rem;
+    border-radius: 999px;
+    font-size: .75rem;
+    text-transform: capitalize;
+  }
+
+  .role-badge.customer {
+    background: #e6f0ff;
+    color: #1d4ed8;
+  }
+
+  .role-badge.staff {
+    background: #fff7e6;
+    color: #b45309;
+  }
+
+  .role-badge.manager {
+    background: #e6f7f0;
+    color: #047857;
+  }
+
+  .role-badge.admin {
+    background: #fee2e2;
+    color: #b91c1c;
+  }
+
+  /* Tiny stats row */
+  .user-meta {
+    font-size: .75rem;
+    color: #777;
+  }
+
+  /* Inline form */
+  .user-action-form {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+  }
+
+  .user-action-form select {
+    font-size: .8rem;
+    padding: .15rem .35rem;
+  }
+
+  .user-action-form .btn {
+    padding: .2rem .7rem;
+    font-size: .8rem;
+  }
+
+  .badge-count {
+    display: inline-block;
+    font-size: .75rem;
+    padding: .1rem .45rem;
+    border-radius: 999px;
+    background: #f3f4f6;
+    color: #4b5563;
+  }
+
+  /* --- Admin: Reports --- */
+  .admin-reports {
+    max-width: 1000px;
+    margin: 2rem auto;
+    padding: 0 1rem 2.5rem;
+  }
+
+  .admin-reports h1 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+  }
+
+  .report-grid {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 900px) {
+    .report-grid {
+      grid-template-columns: minmax(0, 1.7fr) minmax(0, 1.3fr);
+    }
+  }
+
+  .report-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .06);
+    padding: 1rem 1.2rem;
+  }
+
+  .report-card h2 {
+    margin-top: 0;
+    margin-bottom: .7rem;
+    font-size: 1.05rem;
+  }
+
+  /* Tables */
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .9rem;
+  }
+
+  .report-table thead tr {
+    border-bottom: 2px solid #eee;
+  }
+
+  .report-table th,
+  .report-table td {
+    padding: .45rem .3rem;
+  }
+
+  .report-table th {
+    text-align: left;
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #777;
+  }
+
+  .report-table tbody tr:nth-child(even) {
+    background: #fafafa;
+  }
+
+  .report-table tbody tr:hover {
+    background: #f3f3f3;
+  }
+
+  /* Number formatting */
+  .text-right {
+    text-align: right;
+  }
+
+  .badge-soft {
+    display: inline-block;
+    padding: .1rem .45rem;
+    border-radius: 999px;
+    font-size: .75rem;
+    background: #f3f4f6;
+    color: #4b5563;
+  }
+
+  .badge-soft-danger {
+    background: #fee2e2;
+    color: #b91c1c;
+  }
 </style>
 
 <h1>Admin: Products</h1>
@@ -342,60 +347,8 @@ $low_stock    = report_low_stock(10);     // 10 lowest stock items
   <div><button class="btn">Add</button></div>
 </form>
 
-<hr>
-<h2>Recent Orders</h2>
-<?php
-global $mysqli, $USE_DB;
-if ($USE_DB && $mysqli):
-
-  // STRICT / ONLY_FULL_GROUP_BY safe query; also counts total quantity not just rows
-  $q = "
-    SELECT
-      o.user_id,
-      o.customer_name,
-      o.email,
-      o.total_amount,
-      o.placed_at,
-      COALESCE(SUM(oi.qty),0) AS items
-    FROM orders o
-    LEFT JOIN order_items oi ON oi.order_id = o.id
-    GROUP BY o.id, o.customer_name, o.email, o.total_amount, o.placed_at
-    ORDER BY o.id DESC
-    LIMIT 25
-  ";
-
-  $res = mysqli_query($mysqli, $q);
-  if (!$res):
-?>
-    <p class="error">Query failed: <?= e(mysqli_error($mysqli)) ?></p>
-  <?php else: ?>
-    <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%">
-      <tr>
-        <th>#</th>
-        <th>Customer</th>
-        <th>Email</th>
-        <th>Items</th>
-        <th>Total</th>
-        <th>Date</th>
-      </tr>
-      <?php while ($row = mysqli_fetch_assoc($res)): ?>
-        <tr>
-          <td><?= (int)$row['user_id'] ?></td>
-          <td><?= e($row['customer_name']) ?></td>
-          <td><?= e($row['email']) ?></td>
-          <td><?= (int)$row['items'] ?></td>
-          <td>R<?= number_format((float)$row['total_amount'], 2) ?></td>
-          <td><?= e($row['placed_at']) ?></td>
-        </tr>
-      <?php endwhile; ?>
-    </table>
-  <?php endif;
-else: ?>
-  <p class="error">DB not active.</p>
-<?php endif; ?>
-
-<!-- //////////////////////ORDER REPORTS//////////////////////// -->
- <div class="admin-reports">
+<!-- ///////////////This section is for the admin report dasboard//////////// -->
+<div class="admin-reports">
   <h1>Sales & Inventory Reports</h1>
 
   <div class="report-grid">
@@ -496,7 +449,59 @@ else: ?>
   </div>
 </div>
 
-<!-- ////////////////////Existing orders//////////////////////// -->
+<hr>
+<h2>Recent Orders</h2>
+<?php
+global $mysqli, $USE_DB;
+if ($USE_DB && $mysqli):
+
+  // STRICT / ONLY_FULL_GROUP_BY safe query; also counts total quantity not just rows
+  $q = "
+    SELECT
+      o.user_id,
+      o.customer_name,
+      o.email,
+      o.total_amount,
+      o.placed_at,
+      COALESCE(SUM(oi.qty),0) AS items
+    FROM orders o
+    LEFT JOIN order_items oi ON oi.order_id = o.id
+    GROUP BY o.id, o.customer_name, o.email, o.total_amount, o.placed_at
+    ORDER BY o.id DESC
+    LIMIT 25
+  ";
+
+  $res = mysqli_query($mysqli, $q);
+  if (!$res):
+?>
+    <p class="error">Query failed: <?= e(mysqli_error($mysqli)) ?></p>
+  <?php else: ?>
+    <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%">
+      <tr>
+        <th>#</th>
+        <th>Customer</th>
+        <th>Email</th>
+        <th>Items</th>
+        <th>Total</th>
+        <th>Date</th>
+      </tr>
+      <?php while ($row = mysqli_fetch_assoc($res)): ?>
+        <tr>
+          <td><?= (int)$row['user_id'] ?></td>
+          <td><?= e($row['customer_name']) ?></td>
+          <td><?= e($row['email']) ?></td>
+          <td><?= (int)$row['items'] ?></td>
+          <td>R<?= number_format((float)$row['total_amount'], 2) ?></td>
+          <td><?= e($row['placed_at']) ?></td>
+        </tr>
+      <?php endwhile; ?>
+    </table>
+  <?php endif;
+else: ?>
+  <p class="error">DB not active.</p>
+<?php endif; ?>
+
+
 <h2>Existing</h2>
 <table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%">
   <tr>
@@ -520,23 +525,14 @@ else: ?>
           <button class="btn" name="id" value="<?= (int)$p['id'] ?>">Delete</button>
         </form>
         <a class="btn" href="<?= url('product.php?id=' . (int)$p['id']) ?>">View</a>
+        <a class="btn btn-sm btn-warning" href="admin-product-edit.php?id=<?= (int)$p['id'] ?>">Update</a>
       </td>
     </tr>
   <?php endforeach; ?>
 </table>
 
-<!-- //////////////////////////ROLES////////////////////////// -->
-<!-- this section will control the roles of the the people using the system -->
-
 <hr>
-  <?php if (is_admin()): ?>
-    <!-- product create/update/delete forms/buttons -->
-  <?php else: ?>
-    <p style="color:#555;font-size:.9rem;">
-      Managers can view products and orders, but only admins may change products.
-    </p>
-  <?php endif; ?>
-
+<!-- ///////////////////////ADMIN ROLL MANGEMENT//////////// -->
 <div class="admin-wrapper" id="users">
   <div class="admin-section-header">
     <div>
@@ -571,9 +567,9 @@ else: ?>
         <tbody>
           <?php foreach ($users as $u): ?>
             <?php
-              $uid   = (int)$u['id'];
-              $role  = strtolower($u['role'] ?? 'customer');
-              $since = $u['created_at'] ?? null;
+            $uid   = (int)$u['id'];
+            $role  = strtolower($u['role'] ?? 'customer');
+            $since = $u['created_at'] ?? null;
             ?>
             <tr>
               <td>#<?= $uid ?></td>
